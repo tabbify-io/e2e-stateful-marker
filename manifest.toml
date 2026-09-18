@@ -1,0 +1,38 @@
+# The manifest the e2e suite deploys this image with.
+#
+# This file is the SINGLE source of the stateful declaration: the live test
+# sends its text verbatim as `manifest_toml` on `POST /v1/deploy-image`, and the
+# offline contract test parses this same file. A constant in Python would be a
+# second copy of a contract that already has two sides.
+#
+# Spellings that have each cost a measured failure here:
+#   * ports are `[[runtime.ports]]`, never a scalar `[runtime] port`. The
+#     manifest contract has no `deny_unknown_fields` (D8), so a scalar parses,
+#     is dropped, and the boot probes the platform default instead.
+#   * `stateful` / `data_mount` / `data_disk_mb` live in `[runtime]` and reach
+#     the supervisor ONLY through this document — a deploy with no manifest is
+#     ephemeral, with no error anywhere (`supervisor/src/build.rs`
+#     `fetched_from_ref`).
+[app]
+name        = "e2e-stateful-marker"
+kind        = "headless"
+description = "Writes one marker file to its persistent data disk and reads it back"
+
+[lifecycle]
+# always_on: an on_request app parks, and a parked app makes "is it serving"
+# and "did the disk attach" the same measurement.
+mode = "always_on"
+
+[runtime]
+type = "firecracker"
+# 64 MiB is the smallest disk that proves the mechanism. The backup is a zstd
+# of a sparse ext4, so a bigger one buys the test nothing but minutes.
+stateful     = true
+data_mount   = "/data"
+data_disk_mb = 64
+
+[[runtime.ports]]
+port     = 3000
+protocol = "http"
+expose   = "public"
+primary  = true
