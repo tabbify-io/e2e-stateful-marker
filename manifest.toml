@@ -15,10 +15,15 @@
 #   * ports are `[[runtime.ports]]`, never a scalar `[runtime] port`. The
 #     manifest contract has no `deny_unknown_fields` (D8), so a scalar parses,
 #     is dropped, and the boot probes the platform default instead.
-#   * `stateful` / `data_mount` / `data_disk_mb` live in `[runtime]` and reach
+#   * `stateful` / `data_disk_mb` live in `[runtime]` and reach
 #     the supervisor ONLY through this document — a deploy with no manifest is
 #     ephemeral, with no error anywhere (`supervisor/src/build.rs`
 #     `fetched_from_ref`).
+#   * `data_mount` is GONE from the contract (manifest-contract f29825e, 2026-09-19:
+#     every data disk is mounted at `/data`). A manifest that still declares it is
+#     refused at the deploy door, naming the key — which is how this file was found
+#     stale on 2026-09-20, the first time the platform read it for a repo build.
+#
 [app]
 name        = "e2e-stateful-marker"
 kind        = "headless"
@@ -34,7 +39,6 @@ type = "firecracker"
 # 64 MiB is the smallest disk that proves the mechanism. The backup is a zstd
 # of a sparse ext4, so a bigger one buys the test nothing but minutes.
 stateful     = true
-data_mount   = "/data"
 data_disk_mb = 64
 
 [[runtime.ports]]
