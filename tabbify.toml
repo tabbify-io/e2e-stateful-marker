@@ -1,15 +1,18 @@
-# The manifest the e2e suite deploys this image with.
+# The manifest the PLATFORM reads when it builds this repo itself.
 #
-# This file is the SINGLE source of the stateful declaration for the IMAGE
-# door: the live test sends its text verbatim as `manifest_toml` on
-# `POST /v1/deploy-image`, and the offline contract test parses this same file.
-# A constant in Python would be a second copy of a contract that already has
-# two sides.
+# Byte-identical to `manifest.toml` beside it, and the duplication is the point
+# rather than an oversight. The two are read by two different doors:
 #
-# `tabbify.toml` beside it is byte-identical for the declaration and exists for
-# the other door: a repo BUILD reads only that name, and `deploy` carries no
-# port argument, so without it the platform health-probes its own default 8080.
-# Keep the two in step — change one, change both in the same commit.
+#   * `manifest.toml` is what the e2e suite sends as `manifest_toml` on
+#     `POST /v1/deploy-image`, deploying an image the suite already has;
+#   * `tabbify.toml` is the only name a repo BUILD looks for. `deploy` and
+#     `deploy_app` carry no port and no manifest argument (measured
+#     2026-09-20 against the live node door), so a repo without this file is
+#     built, deployed, and then health-probed on the platform default 8080 —
+#     which this app does not listen on. The deploy reaches
+#     `phase=failed stage=health` and nothing anywhere names the cause.
+#
+# Keep them identical. If one changes, change both in the same commit.
 #
 # Spellings that have each cost a measured failure here:
 #   * ports are `[[runtime.ports]]`, never a scalar `[runtime] port`. The
